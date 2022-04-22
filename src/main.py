@@ -124,27 +124,30 @@ class DataFetcher:
 
     def __get_data_in_certain_range(self, start_time, end_time, query: str, csv_path: str):
         print("getting data for ", start_time, " to ", end_time)
-        step = 60  # seconds
-        print("running query : ", query)
-        metric_data = self.prometheus_connection.custom_query_range(
-            query=query,
-            start_time=start_time,
-            end_time=end_time,
-            step=str(step)
-        )
-
         metric_df = None
-        if not metric_data:
-            print("Got empty results, moving on!")
+        import os.path
+        if os.path.exists(csv_path):
+            print("Data already exists, moving on!")
         else:
-            metric_df = self.__convert_query_result_to_data_frame(
-                data=metric_data,
+            step = 60  # seconds
+            print("running query : ", query)
+            metric_data = self.prometheus_connection.custom_query_range(
+                query=query,
                 start_time=start_time,
                 end_time=end_time,
-                step=step
+                step=str(step)
             )
-            print("saving csv to file : ", csv_path)
-            metric_df.to_csv(csv_path)
+            if not metric_data:
+                print("Got empty results, moving on!")
+            else:
+                metric_df = self.__convert_query_result_to_data_frame(
+                    data=metric_data,
+                    start_time=start_time,
+                    end_time=end_time,
+                    step=step
+                )
+                print("saving csv to file : ", csv_path)
+                metric_df.to_csv(csv_path)
         return metric_df
 
     """
