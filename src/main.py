@@ -192,6 +192,8 @@ class DataFetcher:
 def main():
     print("""
     Thank you for using our tool. Let's get some data.
+    You can get an access token here :
+    https://console-openshift-console.apps.smaug.na.operate-first.cloud/
     """)
 
     access_token = input("Inter access token:")
