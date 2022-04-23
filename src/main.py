@@ -7,6 +7,7 @@
 import datetime
 from prometheus_api_client import PrometheusConnect, PrometheusApiClientException
 from pandas import DataFrame
+import os.path
 
 """
 ***********************************************************************************************************************
@@ -125,7 +126,6 @@ class DataFetcher:
     def __get_data_in_certain_range(self, start_time, end_time, query: str, csv_path: str):
         print("getting data for ", start_time, " to ", end_time)
         metric_df = None
-        import os.path
         if os.path.exists(csv_path):
             print("Data already exists, moving on!")
         else:
