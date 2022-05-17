@@ -147,6 +147,7 @@ class DataFetcher:
                     step=step
                 )
                 print("saving csv to file : ", csv_path)
+                os.makedirs(os.path.dirname(csv_path), exist_ok=True)
                 metric_df.to_csv(csv_path)
         return metric_df
 
