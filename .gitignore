@@ -132,5 +132,5 @@ dmypy.json
 .idea/
 
 # data
-./data/container_cpu_usage_seconds/*.csv
-./data/container_memory_working_set_bytes/*.csv
+data/container_cpu_usage_seconds/
+data/container_memory_working_set_bytes/
