@@ -163,6 +163,15 @@ class DataFetcher:
             headers={"Authorization": f"Bearer {self.access_token}"},
             disable_ssl=False
         )
+        # time_now = datetime.datetime.now()
+        # _end_time = time_now.replace(minute=0, second=0, microsecond=0)
+        # _start_time = _end_time - datetime.timedelta(hours=1)
+        # self.prometheus_connection.custom_query_range(
+        #     query="",
+        #     start_time=_start_time,
+        #     end_time=_end_time,
+        #     step=str(60)
+        # )
 
     def get_metric_data_for_the_past_number_of_hours(self):
 
@@ -210,7 +219,15 @@ def main():
     data_fetcher.create_connection()
     print("Connection Successful!")
 
-    data_fetcher.get_metric_data_for_the_past_number_of_hours()
+    number_of_retries = 10
+    for attempt_number in range(1, number_of_retries + 1):
+        try:
+            data_fetcher.get_metric_data_for_the_past_number_of_hours()
+            print("done fetching, nothing failed, exiting")
+            break
+        except Exception as e:
+            print("Something went wrong in attempt number ", attempt_number, " retrying.\nThe error:")
+            print(e)
 
 
 """
