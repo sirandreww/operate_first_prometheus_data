@@ -24,6 +24,11 @@ class DataFetcher:
         self.access_token = access_token
         self.url_to_fetch_from = url_to_fetch_from
         self.prometheus_connection = None
+        self.metrics = [
+            "node_memory_active_bytes_percentage",
+            "container_memory_working_set_bytes",
+            "container_cpu_usage_seconds"
+        ]
 
     """
     *******************************************************************************************************************
@@ -112,13 +117,15 @@ class DataFetcher:
             time_stamps=time_stamps
         )
 
-    @staticmethod
-    def __convert_metric_to_query(metric: str) -> str:
+    def __convert_metric_to_query(self, metric: str) -> str:
+        assert metric in self.metrics
         result = ""
         if metric == "container_memory_working_set_bytes":
             result = 'sum(container_memory_working_set_bytes{name!~".*prometheus.*", image!="", container!="POD", cluster="moc/smaug"}) by (container, pod, namespace, node)'
         elif metric == "container_cpu_usage_seconds":
             result = 'sum(rate(container_cpu_usage_seconds_total{name!~".*prometheus.*", image!="", container!="POD", cluster="moc/smaug"}[5m])) by (container, pod, namespace, node)'
+        elif metric == "node_memory_active_bytes_percentage":
+            result = 'node_memory_Active_bytes/node_memory_MemTotal_bytes*100'
         else:
             assert False
         return result
@@ -163,33 +170,31 @@ class DataFetcher:
             headers={"Authorization": f"Bearer {self.access_token}"},
             disable_ssl=False
         )
-        # time_now = datetime.datetime.now()
-        # _end_time = time_now.replace(minute=0, second=0, microsecond=0)
-        # _start_time = _end_time - datetime.timedelta(hours=1)
-        # self.prometheus_connection.custom_query_range(
-        #     query="",
-        #     start_time=_start_time,
-        #     end_time=_end_time,
-        #     step=str(60)
-        # )
-
-    def get_metric_data_for_the_past_number_of_hours(self):
-
         time_now = datetime.datetime.now()
         _end_time = time_now.replace(minute=0, second=0, microsecond=0)
         _start_time = _end_time - datetime.timedelta(hours=1)
+        self.prometheus_connection.custom_query_range(
+            query="num_of_allocatable_nodes",
+            start_time=_start_time,
+            end_time=_end_time,
+            step=str(60)
+        )
 
-        for i in range(24 * 10):  # try 10 days back
+    def get_metric_data_for_the_past_number_of_hours(self):
+        for metric in self.metrics:
+            time_now = datetime.datetime.now()
+            _end_time = time_now.replace(minute=0, second=0, microsecond=0)
+            _start_time = _end_time - datetime.timedelta(hours=1)
             print("")
-            for metric in ["container_memory_working_set_bytes", "container_cpu_usage_seconds"]:
+            for i in range(24 * 10):  # try 10 days back
                 self.__get_data_in_certain_range(
                     start_time=_start_time,
                     end_time=_end_time,
                     query=self.__convert_metric_to_query(metric),
                     csv_path=f'../data/{metric}/{_start_time}_to_{_end_time}.csv'.replace(":", "_").replace(" ", "_")
                 )
-            _end_time = _start_time
-            _start_time = _end_time - datetime.timedelta(hours=1)
+                _end_time = _start_time
+                _start_time = _end_time - datetime.timedelta(hours=1)
 
 
 """
@@ -228,6 +233,8 @@ def main():
         except Exception as e:
             print("Something went wrong in attempt number ", attempt_number, " retrying.\nThe error:")
             print(e)
+            print("starting new attempt")
+            print("+" * 200)
 
 
 """
