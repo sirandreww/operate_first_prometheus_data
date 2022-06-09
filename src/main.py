@@ -181,20 +181,26 @@ class DataFetcher:
         )
 
     def get_metric_data_for_the_past_number_of_hours(self):
+        did_failure_happen = False
         for metric in self.metrics:
             time_now = datetime.datetime.now()
             _end_time = time_now.replace(minute=0, second=0, microsecond=0)
             _start_time = _end_time - datetime.timedelta(hours=1)
             print("")
             for i in range(24 * 10):  # try 10 days back
-                self.__get_data_in_certain_range(
-                    start_time=_start_time,
-                    end_time=_end_time,
-                    query=self.__convert_metric_to_query(metric),
-                    csv_path=f'../data/{metric}/{_start_time}_to_{_end_time}.csv'.replace(":", "_").replace(" ", "_")
-                )
+                try:
+                    self.__get_data_in_certain_range(
+                        start_time=_start_time,
+                        end_time=_end_time,
+                        query=self.__convert_metric_to_query(metric),
+                        csv_path=f'../data/{metric}/{_start_time}_to_{_end_time}.csv'.replace(":", "_").replace(" ", "_")
+                    )
+                except Exception as e:
+                    print(e)
+                    did_failure_happen = True
                 _end_time = _start_time
                 _start_time = _end_time - datetime.timedelta(hours=1)
+        return did_failure_happen
 
 
 """
@@ -226,15 +232,14 @@ def main():
 
     number_of_retries = 10
     for attempt_number in range(1, number_of_retries + 1):
-        try:
-            data_fetcher.get_metric_data_for_the_past_number_of_hours()
-            print("done fetching, nothing failed, exiting")
-            break
-        except Exception as e:
-            print("Something went wrong in attempt number ", attempt_number, " retrying.\nThe error:")
-            print(e)
-            print("starting new attempt")
+        did_failure_happen = data_fetcher.get_metric_data_for_the_past_number_of_hours()
+        if did_failure_happen:
+            print("Something went wrong in attempt number ", attempt_number, ", performing retry.")
             print("+" * 200)
+            print("starting new attempt")
+        else:
+            print("done fetching, exiting")
+            break
 
 
 """
