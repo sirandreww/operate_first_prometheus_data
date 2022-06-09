@@ -73,6 +73,8 @@ Here is a link to where the data can be viewed:
 
 ## Script explanation
 
+### main.py
+
 Everytime the script runs, it begins <br>
 fetching data starting from the previous hour backwards. For example if you ran <br>
 the script in 09/06/2022 at 12:52 it would start fetching data in these time slots:<br>
@@ -95,9 +97,16 @@ What data are we pulling?
 2. CPU-usage data for each container using this Prometheus query `sum(rate(container_cpu_usage_seconds_total{name
    !~".*prometheus.*", image!="", container!="POD", cluster="moc/smaug"}[5m])) by (container, pod, namespace, node)`.
    Notice that the query is filtering for containers in the "smaug" cluster, that are not a part of Prometheus, that
-   have non-empty images, that are not run by the pod itself. `container_cpu_usage_seconds_total` 
-   Then the query simply groups the containers with the same
+   have non-empty images, that are not run by the pod itself. `container_cpu_usage_seconds_total` is a metric that
+   counts how many cpu seconds in total a container used, performing rate over that gives us the usage in some time 
+   interval. Then the query simply groups the containers with the same
    name, pod, namespace and node.
    
+3. Memory-usage percentage data for each node using this Prometheus query `node_memory_Active_bytes/
+   node_memory_MemTotal_bytes*100`.
    
-   
+## Why are we doing this?
+
+The project is part of a project in intelligent system at the "Technion - Israel Institute of Technology".
+You can get more information about the project in the project's repository :
+[sirandreww/236754_project_in_intelligent_systems](https://github.com/sirandreww/236754_project_in_intelligent_systems.git)
