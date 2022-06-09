@@ -105,6 +105,15 @@ What data are we pulling?
 3. Memory-usage percentage data for each node using this Prometheus query `node_memory_Active_bytes/
    node_memory_MemTotal_bytes*100`.
    
+### data_merger.py
+
+This script takes the data in the format above and merges it in a way that would allow learning models to run on the 
+data. The merging process take into account that some hours may have been missed when fetching for months, and leaves
+csv files that have continuous hours only.
+
+Each of these csv files can then be used for time series forecasting.
+
+   
 ## Why are we doing this?
 
 The project is part of a project in intelligent system at the "Technion - Israel Institute of Technology".
