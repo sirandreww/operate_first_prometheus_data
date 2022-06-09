@@ -71,3 +71,33 @@ Here is a link to where the data can be viewed:
 
 [link to data](https://drive.google.com/drive/folders/1Zpye95sOnMdO6dw0wTuai-s-2BJGUmiP?usp=sharing)
 
+## Script explanation
+
+Everytime the script runs, it begins <br>
+fetching data starting from the previous hour backwards. For example if you ran <br>
+the script in 09/06/2022 at 12:52 it would start fetching data in these time slots:<br>
+
+1. 09/06/2022 at 11:00 - 09/06/2022 at 12:00
+2. 09/06/2022 at 10:00 - 09/06/2022 at 11:00
+3. 09/06/2022 at 9:00 - 09/06/2022 at 10:00
+4. ...
+
+And so on for about 10 days back.
+
+What data are we pulling?
+
+1. Memory-usage data for each container using this Prometheus query `sum(container_memory_working_set_bytes{
+   name!~".*prometheus.*", image!="", container!="POD", cluster="moc/smaug"}) by (container, pod, namespace, node)`.
+   Notice that the query is filtering for containers in the "smaug" cluster, that are not a part of Prometheus, that
+   have non-empty images, that are not run by the pod itself. Then the query simply groups the containers with the same
+   name, pod, namespace and node.
+   
+2. CPU-usage data for each container using this Prometheus query `sum(rate(container_cpu_usage_seconds_total{name
+   !~".*prometheus.*", image!="", container!="POD", cluster="moc/smaug"}[5m])) by (container, pod, namespace, node)`.
+   Notice that the query is filtering for containers in the "smaug" cluster, that are not a part of Prometheus, that
+   have non-empty images, that are not run by the pod itself. `container_cpu_usage_seconds_total` 
+   Then the query simply groups the containers with the same
+   name, pod, namespace and node.
+   
+   
+   
