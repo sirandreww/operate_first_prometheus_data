@@ -4,19 +4,7 @@
 ***********************************************************************************************************************
 """
 
-
-import os
-import datetime
-
-import IPython
-import IPython.display
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import seaborn as sns
-import tensorflow as tf
-
 
 """
 ***********************************************************************************************************************
@@ -82,7 +70,7 @@ class TimeSeriesDataSet:
         "cast to numeric"
         df = df.astype(dtype='float64')
         # df = df.to_numeric(, downcast='float')
-        print(df.dtypes)
+        # print(df.dtypes)
 
         return df
 
@@ -95,8 +83,11 @@ class TimeSeriesDataSet:
     def get_data_frame(self):
         return self.df
 
-    def print_dataset_description(self):
-        print(self.df.describe().transpose().to_markdown())
+    def get_dataset_description(self):
+        return self.df.describe().transpose().to_markdown()
+
+    def __str__(self):
+        return self.df.to_markdown()
 
 
 """
@@ -110,21 +101,20 @@ def main():
     print("""
     This is only a library to make it easier to import data.
     This script should only be run for testing the library.
-    The library takes a name of a merged file (merged with data_merger.py), and returns a TensorFlow dataset.
+    The library takes a name of a merged file (merged with data_merger.py), and returns a dataset.
     """)
 
     ts_ds_container_cpu = TimeSeriesDataSet(
         "../data/container_cpu_usage_seconds_2022-04-19_17_00_00_to_2022-04-24_20_00_00__123_hours.csv")
+    print(ts_ds_container_cpu)
+
     ts_ds_container_memory = TimeSeriesDataSet(
         "../data/container_memory_working_set_bytes_2022-04-19_17_00_00_to_2022-04-24_20_00_00__123_hours.csv")
+    print(ts_ds_container_memory)
+
     ts_ds_node_memory = TimeSeriesDataSet(
         "../data/node_memory_active_bytes_percentage_2022-06-01_09_00_00_to_2022-06-06_10_00_00__121_hours.csv")
-
-    ts_ds_container_cpu.print_dataset_description()
-    ts_ds_container_memory.print_dataset_description()
-    ts_ds_node_memory.print_dataset_description()
-    # print(ts_ds_container_memory_df.describe().transpose().to_markdown())
-    # print(ts_ds_node_memory_df.describe().transpose().to_markdown())
+    print(ts_ds_node_memory)
 
     print("Done")
 
