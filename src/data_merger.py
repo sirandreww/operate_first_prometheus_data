@@ -52,7 +52,8 @@ class DataMerger:
             self.current_time_segment_data_frame = dataframe_to_add
         else:
             start = time.time()
-            merged_df = self.current_time_segment_data_frame.merge(
+            current_with_dropped_last_col = self.current_time_segment_data_frame.iloc[:, :-1]
+            merged_df = current_with_dropped_last_col.merge(
                 right=dataframe_to_add,
                 how="outer",
                 sort=True,
@@ -79,9 +80,9 @@ class DataMerger:
         path = f"{self.path_to_data}_{starting_hour_of_last_save_iteration}_to_{ending_hour_of_current_iteration}__{elapsed_hours}_hours.csv"
         print("Save to path = ", path)
         start = time.time()
-        self.current_time_segment_data_frame.to_csv(
+        transposed = self.current_time_segment_data_frame.transpose()
+        transposed.to_csv(
             path_or_buf=path,
-            index=False
         )
         end = time.time()
         print("writing took ", end - start)
