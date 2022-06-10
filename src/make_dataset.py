@@ -69,13 +69,20 @@ class TimeSeriesDataSet:
         "drop rows that makeup name of sample"
         df = df.iloc[len(self.list_of_rows_that_are_not_date_time):, :]
 
+        "turn date time columns into datetime format"
+        df.index = pd.to_datetime(df.index, format='%Y-%m-%d_%H_%M_%S')  # %Y-04-19_17_00_00'
+
         "drop samples that have more than half of their data empty"
         df.dropna(thresh=(len(rows) / 2), axis=1, inplace=True)
 
-        "drop rows that are entirely empty"
+        "drop rows that are entirely empty"  # dangerous
         df.dropna(how='all', inplace=True)
 
-        "drop rows that don't have enough unique values (easy to predict)"
+        # "drop rows that don't have enough unique values (easy to predict)"
+        "cast to numeric"
+        df = df.astype(dtype='float64')
+        # df = df.to_numeric(, downcast='float')
+        print(df.dtypes)
 
         return df
 
@@ -87,6 +94,9 @@ class TimeSeriesDataSet:
 
     def get_data_frame(self):
         return self.df
+
+    def print_dataset_description(self):
+        print(self.df.describe().transpose().to_markdown())
 
 
 """
@@ -110,11 +120,9 @@ def main():
     ts_ds_node_memory = TimeSeriesDataSet(
         "../data/node_memory_active_bytes_percentage_2022-06-01_09_00_00_to_2022-06-06_10_00_00__121_hours.csv")
 
-    ts_ds_container_cpu_df = ts_ds_container_cpu.get_data_frame()
-    # ts_ds_container_memory_df = ts_ds_container_memory.get_data_frame()
-    # ts_ds_node_memory_df = ts_ds_node_memory.get_data_frame()
-
-    print(ts_ds_container_cpu_df.describe().transpose().to_markdown())
+    ts_ds_container_cpu.print_dataset_description()
+    ts_ds_container_memory.print_dataset_description()
+    ts_ds_node_memory.print_dataset_description()
     # print(ts_ds_container_memory_df.describe().transpose().to_markdown())
     # print(ts_ds_node_memory_df.describe().transpose().to_markdown())
 
