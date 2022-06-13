@@ -113,7 +113,7 @@ def main():
     print("""
     This is only a library to make it easier to import data.
     This script should only be run for testing the library.
-    The library takes a name of a merged file (merged with data_merger.py), and returns a dataset.
+    The library takes a name of a merged file (merged with merge_data.py), and returns a dataset.
     """)
 
     ts_ds_container_cpu = TimeSeriesDataSet(
