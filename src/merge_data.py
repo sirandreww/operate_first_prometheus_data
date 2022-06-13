@@ -21,13 +21,9 @@ class DataMerger:
     """
     Class that can merge fetched data from prometheus in operate first.
     """
-    def __init__(self, path_to_data):
+    def __init__(self, path_to_data: str):
         self.path_to_data = path_to_data
-        self.csv_names = [f for f in listdir(self.path_to_data) if isfile(join(self.path_to_data, f))]
-        self.csv_names.sort()
-        self.current_time_segment_data_frame = None
-        self.last_save_iteration = 0
-        self.folder_path = "../data/step_2__data_islands/"
+        self.folder_path = f"../data/step_2__data_islands/{path_to_data.split('/')[-1]}"
 
     """
     *******************************************************************************************************************
@@ -50,74 +46,94 @@ class DataMerger:
         return filtered_cols_intersection
 
     def __get_merger_of_two_data_frames(self, left_df, right_df):
-        # start = time.time()
+        start = time.time()
         merged_df = left_df.merge(
             right=right_df,
             how="outer",
             sort=True,
             on=self.__get_cols_to_merge_on(df_1=left_df, df_2=right_df)
         )
-        # end = time.time()
-        # print("merging took ", end - start)
+        end = time.time()
+        print("merging took ", end - start)
         return merged_df
 
-    def __add_given_dataframe_to_output_dataframe(self, dataframe_to_add):
-        if self.current_time_segment_data_frame is None:
-            self.current_time_segment_data_frame = dataframe_to_add
-        else:
-            "drop last minute since the new df also has that sample"
-            current_with_dropped_last_col = self.current_time_segment_data_frame.iloc[:, :-1]
-            "merge the two data frames"
-            merged_df = self.__get_merger_of_two_data_frames(
-                left_df=current_with_dropped_last_col,
-                right_df=dataframe_to_add
-            )
-            "replace the saved dataframe"
-            self.current_time_segment_data_frame = merged_df
-
-    def __did_we_just_miss_an_hour(self, index):
-        if index == 0:
-            return False
-        else:
-            ending_hour_of_last_index = self.csv_names[index - 1][-23:-4]
-            starting_hour_of_current_index = self.csv_names[index][:19]
-            return ending_hour_of_last_index != starting_hour_of_current_index
-
-    def __save_data_frame(self, path):
+    @staticmethod
+    def __save_data_frame(path, data_frame):
         print("Save to path = ", path)
         start = time.time()
-        transposed = self.current_time_segment_data_frame.transpose()
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        transposed.to_csv(
+        data_frame.to_csv(
             path_or_buf=path,
         )
         end = time.time()
         print("writing took ", end - start)
 
-    def __get_path_to_save_data_frame_in(self, last_save_iteration, current_iteration):
-        starting_hour_of_last_save_iteration = self.csv_names[last_save_iteration][:19]
-        ending_hour_of_current_iteration = self.csv_names[current_iteration][-23:-4]
-        elapsed_hours = current_iteration - last_save_iteration + 1
-        metric = self.path_to_data.split("/")[-1]
-        path = f"{self.folder_path}{metric}/{starting_hour_of_last_save_iteration}_to_{ending_hour_of_current_iteration}__{elapsed_hours}_hours.csv"
+    @staticmethod
+    def __get_path_to_save_data_frame_in(first_csv_name, second_csv_name, destination_directory):
+        starting_hour_of_last_save_iteration = first_csv_name[:19]
+        ending_hour_of_current_iteration = second_csv_name[-23:-4]
+        path = f"{destination_directory}/{starting_hour_of_last_save_iteration}_to_{ending_hour_of_current_iteration}.csv"
         return path
 
-    def __save_and_free_current_time_segment(self, last_save_iteration, current_iteration):
-        self.__save_data_frame(
-            path=self.__get_path_to_save_data_frame_in(
-                last_save_iteration=last_save_iteration,
-                current_iteration=current_iteration
-            )
+    @staticmethod
+    def __load_csv_as_data_frame(path_to_csv: str):
+        current_dataframe = pandas.read_csv(
+            filepath_or_buffer=path_to_csv,
+            index_col=0
         )
-        self.current_time_segment_data_frame = None
+        return current_dataframe
 
-    def __check_if_current_time_segment_ended_and_save_if_yes(self, index):
-        if self.__did_we_just_miss_an_hour(index=index):
-            self.__save_and_free_current_time_segment(
-                last_save_iteration=self.last_save_iteration,
-                current_iteration=index-1
+    @staticmethod
+    def __get_names_of_files_in_directory_sorted(directory_path):
+        csv_names = [f for f in listdir(directory_path) if isfile(join(directory_path, f))]
+        csv_names.sort()
+        return csv_names
+
+    def __merge_two_consecutive_files_and_save_them(self, source_directory, destination_directory, csv_names, index_1):
+        index_2 = index_1 + 1
+        dataframe_1 = self.__load_csv_as_data_frame(path_to_csv=f"{source_directory}/{csv_names[index_1]}")
+        if index_2 == len(csv_names):
+            "move data frame to new path"
+            self.__save_data_frame(
+                path=self.__get_path_to_save_data_frame_in(
+                    first_csv_name=csv_names[index_1],
+                    second_csv_name=csv_names[index_1],
+                    destination_directory=destination_directory
+                ),
+                data_frame=dataframe_1
             )
-            self.last_save_iteration = index
+        else:
+            dataframe_2 = self.__load_csv_as_data_frame(path_to_csv=f"{source_directory}/{csv_names[index_2]}")
+            "drop last minute in first data frame since the second data frame also has that sample"
+            dataframe_1_without_last_minute = dataframe_1.iloc[:, :-1]
+            "merge the two data frames"
+            merged_df = self.__get_merger_of_two_data_frames(
+                left_df=dataframe_1_without_last_minute,
+                right_df=dataframe_2
+            )
+            "save new merged data frame"
+            self.__save_data_frame(
+                path=self.__get_path_to_save_data_frame_in(
+                    first_csv_name=csv_names[index_1],
+                    second_csv_name=csv_names[index_2],
+                    destination_directory=destination_directory
+                ),
+                data_frame=merged_df
+            )
+
+    def __perform_merging_iteration(self, csv_names, source_directory, destination_directory):
+        print("len(csv_names) = ", len(csv_names))
+        number_of_iterations = (len(csv_names) + 1) // 2
+        print("number_of_iterations = ", number_of_iterations)
+        for i in range(number_of_iterations):
+            print("progress = ", i + 1, " / ", number_of_iterations)
+            index_1 = 2 * i
+            self.__merge_two_consecutive_files_and_save_them(
+                source_directory=source_directory,
+                destination_directory=destination_directory,
+                csv_names=csv_names,
+                index_1=index_1
+            )
 
     """
     *******************************************************************************************************************
@@ -126,22 +142,33 @@ class DataMerger:
     """
 
     def merge_data(self):
-        self.last_save_iteration = 0
-        print("number of files = ", len(self.csv_names))
-        for i, csv_name in enumerate(self.csv_names):
-            self.__check_if_current_time_segment_ended_and_save_if_yes(index=i)
-            print("current file = ", (i + 1), " / ", len(self.csv_names))
-            current_dataframe = pandas.read_csv(
-                filepath_or_buffer=f"{self.path_to_data}/{csv_name}",
-                index_col=0
-            )
-            self.__add_given_dataframe_to_output_dataframe(dataframe_to_add=current_dataframe)
+        # self.last_save_iteration = 0
+        # print("number of files = ", len(self.csv_names))
+        merge_iteration = 0
+        source_directory = self.path_to_data
+        destination_directory = f"{self.folder_path}/iteration_1"
+        while True:
+            print("current iteration = ", (merge_iteration + 1))
+            csv_names = self.__get_names_of_files_in_directory_sorted(directory_path=source_directory)
+            assert len(csv_names) != 0
+            if len(csv_names) == 1:
+                break
+            else:
+                self.__perform_merging_iteration(
+                    csv_names=csv_names,
+                    source_directory=source_directory,
+                    destination_directory=destination_directory
+                )
+                source_directory = destination_directory
+                destination_directory = f"{self.folder_path}/iteration_{merge_iteration + 2}"
+            merge_iteration += 1
 
-        print("Saving final dataframe")
-        self.__save_and_free_current_time_segment(
-            last_save_iteration=self.last_save_iteration,
-            current_iteration=len(self.csv_names) - 1
-        )
+
+        # print("Saving final dataframe")
+        # self.__save_and_free_current_time_segment(
+        #     last_save_iteration=self.last_save_iteration,
+        #     current_iteration=len(self.csv_names) - 1
+        # )
 
 
 """
@@ -155,9 +182,13 @@ def main():
     print("""
     Thank you for using our tool. 
     This tool merges the data in 
-    ../data/container_cpu_usage_seconds
-    ../data/container_memory_working_set_bytes
-    ../data/node_memory_active_bytes_percentage
+    ../data/step_1__continuous_data_fetching/container_cpu_usage_seconds
+    ../data/step_1__continuous_data_fetching/container_memory_working_set_bytes
+    ../data/step_1__continuous_data_fetching/node_memory_active_bytes_percentage
+    
+    This script merges every two files and saves the output. 
+    And does this repeatedly until we have one file.
+    It is designed to do so in order to reduce memory usage and be able to merge longer files.
     """)
 
     container_cpu_merger = DataMerger("../data/step_1__continuous_data_fetching/container_cpu_usage_seconds")
