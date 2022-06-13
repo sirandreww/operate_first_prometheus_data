@@ -194,7 +194,7 @@ class DataFetcher:
                         start_time=_start_time,
                         end_time=_end_time,
                         query=self.__convert_metric_to_query(metric),
-                        csv_path=f'../data/{metric}/{_start_time}_to_{_end_time}.csv'.replace(":", "_").replace(" ", "_")
+                        csv_path=f'../data/step_1__continuous_data_fetching/{metric}/{_start_time}_to_{_end_time}.csv'.replace(":", "_").replace(" ", "_")
                     )
                 except Exception as e:
                     print(e)

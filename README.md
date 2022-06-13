@@ -65,19 +65,15 @@ python main.py
 
 Install packages when required.
 
-## Link To Data :
-
-Here is a link to where the data can be viewed:
-
-[link to data](https://drive.google.com/drive/folders/1Zpye95sOnMdO6dw0wTuai-s-2BJGUmiP?usp=sharing)
-
 ## Script explanation
 
-### main.py
+### Step 1 - main.py
 
-Everytime the script runs, it begins <br>
-fetching data starting from the previous hour backwards. For example if you ran <br>
-the script in 09/06/2022 at 12:52 it would start fetching data in these time slots:<br>
+Everytime the script runs,
+it begins fetching data starting from the previous hour
+backwards. <br>
+For example if you ran the script on 09/06/2022 at 12:52
+it would start fetching data in these time slots:<br>
 
 1. 09/06/2022 at 11:00 - 09/06/2022 at 12:00
 2. 09/06/2022 at 10:00 - 09/06/2022 at 11:00
@@ -105,17 +101,30 @@ What data are we pulling?
 3. Memory-usage percentage data for each node using this Prometheus query `node_memory_Active_bytes/
    node_memory_MemTotal_bytes*100`.
    
-### data_merger.py
+### Step 2 - merge_data.py
 
-This script takes the data in the format above and merges it in a way that would allow learning models to run on the 
-data. The merging process take into account that some hours may have been missed when fetching for months, and leaves
+After having ran the previous step for months to fetch data
+from Prometheus, we now have thousands of csv files for each
+metric, each file corresponds to some hour in that time 
+period. This step is meant to merge all the data into one 
+single csv file.
+
+This script takes the data in the format above and merges 
+it. The merging process takes into account that some hours
+may have been missed when fetching for months, and leaves
 csv files that have continuous hours only.
 
-Each of these csv files can then be used for time series forecasting.
-
+Those csv files may still have missing data in them, and 
+require further processing.
    
 ## Why are we doing this?
 
 The project is part of a project in intelligent system at the "Technion - Israel Institute of Technology".
 You can get more information about the project in the project's repository :
 [sirandreww/236754_project_in_intelligent_systems](https://github.com/sirandreww/236754_project_in_intelligent_systems.git)
+
+## Link To Data :
+
+Here is a link to where the data can be viewed:
+
+[link to data](https://drive.google.com/drive/folders/1Zpye95sOnMdO6dw0wTuai-s-2BJGUmiP?usp=sharing)

@@ -8,6 +8,7 @@ import pandas
 from os import listdir
 from os.path import isfile, join
 import time
+import os
 
 """
 ***********************************************************************************************************************
@@ -26,6 +27,7 @@ class DataMerger:
         self.csv_names.sort()
         self.current_time_segment_data_frame = None
         self.last_save_iteration = 0
+        self.folder_path = "../data/step_2__data_islands/"
 
     """
     *******************************************************************************************************************
@@ -47,22 +49,30 @@ class DataMerger:
         filtered_cols_intersection = list(filter(DataMerger.__is_not_time_stamp, cols_intersection))
         return filtered_cols_intersection
 
+    def __get_merger_of_two_data_frames(self, left_df, right_df):
+        # start = time.time()
+        merged_df = left_df.merge(
+            right=right_df,
+            how="outer",
+            sort=True,
+            on=self.__get_cols_to_merge_on(df_1=left_df, df_2=right_df)
+        )
+        # end = time.time()
+        # print("merging took ", end - start)
+        return merged_df
+
     def __add_given_dataframe_to_output_dataframe(self, dataframe_to_add):
         if self.current_time_segment_data_frame is None:
             self.current_time_segment_data_frame = dataframe_to_add
         else:
-            start = time.time()
+            "drop last minute since the new df also has that sample"
             current_with_dropped_last_col = self.current_time_segment_data_frame.iloc[:, :-1]
-            merged_df = current_with_dropped_last_col.merge(
-                right=dataframe_to_add,
-                how="outer",
-                sort=True,
-                on=self.__get_cols_to_merge_on(df_1=self.current_time_segment_data_frame, df_2=dataframe_to_add)
+            "merge the two data frames"
+            merged_df = self.__get_merger_of_two_data_frames(
+                left_df=current_with_dropped_last_col,
+                right_df=dataframe_to_add
             )
-            end = time.time()
-            print("merging took ", end - start)
-            # if end - start > 0.5:
-            #     print("Taking too much time")
+            "replace the saved dataframe"
             self.current_time_segment_data_frame = merged_df
 
     def __did_we_just_miss_an_hour(self, index):
@@ -73,19 +83,32 @@ class DataMerger:
             starting_hour_of_current_index = self.csv_names[index][:19]
             return ending_hour_of_last_index != starting_hour_of_current_index
 
-    def __save_and_free_current_time_segment(self, last_save_iteration, current_iteration):
-        starting_hour_of_last_save_iteration = self.csv_names[last_save_iteration][:19]
-        ending_hour_of_current_iteration = self.csv_names[current_iteration][-23:-4]
-        elapsed_hours = current_iteration - last_save_iteration + 1
-        path = f"{self.path_to_data}_{starting_hour_of_last_save_iteration}_to_{ending_hour_of_current_iteration}__{elapsed_hours}_hours.csv"
+    def __save_data_frame(self, path):
         print("Save to path = ", path)
         start = time.time()
         transposed = self.current_time_segment_data_frame.transpose()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         transposed.to_csv(
             path_or_buf=path,
         )
         end = time.time()
         print("writing took ", end - start)
+
+    def __get_path_to_save_data_frame_in(self, last_save_iteration, current_iteration):
+        starting_hour_of_last_save_iteration = self.csv_names[last_save_iteration][:19]
+        ending_hour_of_current_iteration = self.csv_names[current_iteration][-23:-4]
+        elapsed_hours = current_iteration - last_save_iteration + 1
+        metric = self.path_to_data.split("/")[-1]
+        path = f"{self.folder_path}{metric}/{starting_hour_of_last_save_iteration}_to_{ending_hour_of_current_iteration}__{elapsed_hours}_hours.csv"
+        return path
+
+    def __save_and_free_current_time_segment(self, last_save_iteration, current_iteration):
+        self.__save_data_frame(
+            path=self.__get_path_to_save_data_frame_in(
+                last_save_iteration=last_save_iteration,
+                current_iteration=current_iteration
+            )
+        )
         self.current_time_segment_data_frame = None
 
     def __check_if_current_time_segment_ended_and_save_if_yes(self, index):
@@ -137,9 +160,9 @@ def main():
     ../data/node_memory_active_bytes_percentage
     """)
 
-    container_cpu_merger = DataMerger("../data/container_cpu_usage_seconds")
-    container_mem_merger = DataMerger("../data/container_memory_working_set_bytes")
-    node_mem_merger = DataMerger("../data/node_memory_active_bytes_percentage")
+    container_cpu_merger = DataMerger("../data/step_1__continuous_data_fetching/container_cpu_usage_seconds")
+    container_mem_merger = DataMerger("../data/step_1__continuous_data_fetching/container_memory_working_set_bytes")
+    node_mem_merger = DataMerger("../data/step_1__continuous_data_fetching/node_memory_active_bytes_percentage")
 
     container_cpu_merger.merge_data()
     container_mem_merger.merge_data()
