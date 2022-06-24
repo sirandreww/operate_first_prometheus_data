@@ -116,6 +116,11 @@ csv files that have continuous hours only.
 
 Those csv files may still have missing data in them, and 
 require further processing.
+
+### Using the data
+
+A script that imports and uses the data is available in
+the repository mentioned bellow.
    
 ## Why are we doing this?
 
