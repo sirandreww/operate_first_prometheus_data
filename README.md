@@ -56,18 +56,18 @@ Here is a repository that much of this information is taken from:
 
 ## Run Data Fetching code :
 
-Change directory to `src/` and then run `main.py` like so :
+Change directory to `src/` and then run `fetch_data.py` like so :
 
 ```
 cd src/
-python main.py
+python fetch_data.py
 ```
 
 Install packages when required.
 
 ## Script explanation
 
-### Step 1 - main.py
+### Step 1 - fetch_data.py
 
 Everytime the script runs,
 it begins fetching data starting from the previous hour
