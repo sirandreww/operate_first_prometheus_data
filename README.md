@@ -56,18 +56,18 @@ Here is a repository that much of this information is taken from:
 
 ## Run Data Fetching code :
 
-Change directory to `src/` and then run `fetch_data.py` like so :
+Change directory to `src/` and then run `01_fetch_data.py` like so :
 
 ```
 cd src/
-python fetch_data.py
+python 01_fetch_data.py
 ```
 
 Install packages when required.
 
 ## Script explanation
 
-### Step 1 - fetch_data.py
+### Step 1 - 01_fetch_data.py
 
 Everytime the script runs,
 it begins fetching data starting from the previous hour
@@ -101,7 +101,7 @@ What data are we pulling?
 3. Memory-usage percentage data for each node using this Prometheus query `node_memory_Active_bytes/
    node_memory_MemTotal_bytes*100`.
    
-### Step 2 - merge_data.py
+### Step 2 - 02_merge_data.py
 
 After having ran the previous step for months to fetch data
 from Prometheus, we now have thousands of csv files for each
