@@ -117,6 +117,12 @@ csv files that have continuous hours only.
 Those csv files may still have missing data in them, and 
 require further processing.
 
+### Step 3 - 03_make_dataset.py
+
+This script takes a merged data file from the previous step
+and makes a dataset out of that data. This data can then be 
+used with deep learning models.
+
 ### Using the data
 
 A script that imports and uses the data is available in
