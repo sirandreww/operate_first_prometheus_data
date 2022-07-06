@@ -108,23 +108,30 @@ class DataSetMaker:
             return diff > datetime.timedelta(minutes=1)
 
     @staticmethod
-    def __get_key_anl_list_of_time_series_for_row_in_df(row_of_df, first_index_not_time_stamp):
+    def __get_key_and_list_of_time_series_for_row_in_df(row_of_df, first_index_not_time_stamp):
         result = []
 
         "drop rows that are entirely empty"
         row_of_df = row_of_df.dropna()
 
         "figure out what they key of the dictionary should be"
-        key_of_dict = '    '.join(row_of_df[:first_index_not_time_stamp])
+        key_of_dict = ', '.join(row_of_df[:first_index_not_time_stamp])
 
         number_of_columns = len(row_of_df)
         last_time_series_index = first_index_not_time_stamp
 
         for j in range(first_index_not_time_stamp, number_of_columns):
             if DataSetMaker.__are_we_about_to_skip_a_minute(j=j, row_of_df=row_of_df):
-                uninterrupted_time_series = row_of_df[last_time_series_index: j + 1]
+                "take the time series we just saw out"
+                uninterrupted_time_series_as_pandas_series = row_of_df[last_time_series_index: j + 1]
                 last_time_series_index = j + 1
-                result.append(uninterrupted_time_series)
+                "turn time series into list of tuples of timestamp and value"
+                uninterrupted_time_series_as_df = pd.DataFrame(uninterrupted_time_series_as_pandas_series)
+                uninterrupted_time_series_as_iter_tuples = uninterrupted_time_series_as_df.itertuples(
+                    index=True, name=None
+                )
+                uninterrupted_time_series_as_list_of_tuples = list(uninterrupted_time_series_as_iter_tuples)
+                result.append(uninterrupted_time_series_as_list_of_tuples)
         return key_of_dict, result
 
     @staticmethod
@@ -137,7 +144,7 @@ class DataSetMaker:
         print("Splitting data:")
         for i in range(number_of_rows):
             print(f"Iteration number {i + 1} / {number_of_rows}")
-            k, v = DataSetMaker.__get_key_anl_list_of_time_series_for_row_in_df(
+            k, v = DataSetMaker.__get_key_and_list_of_time_series_for_row_in_df(
                 row_of_df=df.iloc[i],
                 first_index_not_time_stamp=fi
             )
@@ -154,21 +161,26 @@ class DataSetMaker:
     """
 
     def __save_json_result(self, result, csv_file):
-        class JSONEncoder(json.JSONEncoder):
+        class PdEncoder(json.JSONEncoder):
             def default(self, obj):
-                if hasattr(obj, 'to_json'):
-                    return obj.to_json(orient='records')
+                if isinstance(obj, pd.Timestamp):
+                    return str(obj)
                 return json.JSONEncoder.default(self, obj)
 
+        _start = time.time()
         file_path = f"{self.destination_path}{csv_file[:-4]}.json"
         print(f"Writing json to '{file_path}'")
         with open(file_path, "w") as a_file:
-            json.dump(result, a_file, cls=JSONEncoder, indent=2)
+            print("Saving with indent = 1 !")
+            json.dump(result, a_file, indent=1, cls=PdEncoder)
+        _end = time.time()
+        print(f"Reading took {_end - _start} seconds")
+        return file_path
 
     def __make_data_set_and_save_it(self, csv_file):
         df = self.__read_data_frame(csv_path=f"{self.source_path}{csv_file}")
         time_series = self.__split_df(df=df)
-        self.__save_json_result(result=time_series, csv_file=csv_file)
+        file_path = self.__save_json_result(result=time_series, csv_file=csv_file)
 
     """
     *******************************************************************************************************************
@@ -178,7 +190,7 @@ class DataSetMaker:
 
     def make_data_sets_and_save_them(self):
         list_of_files = self.__get_names_of_files_in_directory_sorted(self.source_path)
-        for csv_file in list_of_files[2:]:
+        for csv_file in list_of_files[10:]:
             self.__make_data_set_and_save_it(csv_file=csv_file)
 
 
