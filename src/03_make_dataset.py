@@ -108,6 +108,27 @@ class DataSetMaker:
             return diff > datetime.timedelta(minutes=1)
 
     @staticmethod
+    def __extract_time_series_list_from_range(row_of_df, last_time_series_index, next_time_series_index):
+        "take the time series we just saw out"
+        uninterrupted_time_series_as_pandas_series = row_of_df[last_time_series_index: next_time_series_index]
+
+        "turn time series into list of tuples of timestamp and value"
+        uninterrupted_time_series_as_df = pd.DataFrame(uninterrupted_time_series_as_pandas_series)
+        uninterrupted_time_series_as_iter_tuples = uninterrupted_time_series_as_df.itertuples(
+            index=False, name=None
+        )
+        uninterrupted_time_series_as_list = [x[0] for x in uninterrupted_time_series_as_iter_tuples]
+        start_time = row_of_df.index[last_time_series_index]
+        stop_time = row_of_df.index[next_time_series_index - 1]
+        time_delta_in_minutes = (stop_time - start_time).total_seconds() / 60
+        assert (time_delta_in_minutes + 1) == len(uninterrupted_time_series_as_list)
+        return {
+            "start": start_time,
+            "stop": stop_time,
+            "data": uninterrupted_time_series_as_list
+        }
+
+    @staticmethod
     def __get_key_and_list_of_time_series_for_row_in_df(row_of_df, first_index_not_time_stamp):
         result = []
 
@@ -122,16 +143,13 @@ class DataSetMaker:
 
         for j in range(first_index_not_time_stamp, number_of_columns):
             if DataSetMaker.__are_we_about_to_skip_a_minute(j=j, row_of_df=row_of_df):
-                "take the time series we just saw out"
-                uninterrupted_time_series_as_pandas_series = row_of_df[last_time_series_index: j + 1]
-                last_time_series_index = j + 1
-                "turn time series into list of tuples of timestamp and value"
-                uninterrupted_time_series_as_df = pd.DataFrame(uninterrupted_time_series_as_pandas_series)
-                uninterrupted_time_series_as_iter_tuples = uninterrupted_time_series_as_df.itertuples(
-                    index=True, name=None
+                current_item = DataSetMaker.__extract_time_series_list_from_range(
+                    row_of_df=row_of_df,
+                    last_time_series_index=last_time_series_index,
+                    next_time_series_index=j + 1
                 )
-                uninterrupted_time_series_as_list_of_tuples = list(uninterrupted_time_series_as_iter_tuples)
-                result.append(uninterrupted_time_series_as_list_of_tuples)
+                result.append(current_item)
+                last_time_series_index = j + 1
         return key_of_dict, result
 
     @staticmethod
@@ -171,7 +189,7 @@ class DataSetMaker:
         file_path = f"{self.destination_path}{csv_file[:-4]}.json"
         print(f"Writing json to '{file_path}'")
         with open(file_path, "w") as a_file:
-            print("Saving with indent = 1 !")
+            # print("Saving with indent = 1 !")
             json.dump(result, a_file, indent=1, cls=PdEncoder)
         _end = time.time()
         print(f"Reading took {_end - _start} seconds")
@@ -190,7 +208,7 @@ class DataSetMaker:
 
     def make_data_sets_and_save_them(self):
         list_of_files = self.__get_names_of_files_in_directory_sorted(self.source_path)
-        for csv_file in list_of_files[10:]:
+        for csv_file in list_of_files:
             self.__make_data_set_and_save_it(csv_file=csv_file)
 
 
